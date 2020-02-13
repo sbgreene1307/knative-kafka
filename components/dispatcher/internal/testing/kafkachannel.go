@@ -4,7 +4,7 @@ import (
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
-	v1alpha12 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
+	duckv1alpha1 "knative.dev/eventing/pkg/apis/duck/v1alpha1"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,7 +34,11 @@ func WithInitKafkaChannelConditions(nc *v1alpha1.KafkaChannel) {
 }
 
 func WithKafkaChannelReady(nc *v1alpha1.KafkaChannel) {
+	nc.Status.MarkTopicTrue()
 	nc.Status.MarkChannelServiceTrue()
+	nc.Status.MarkChannelDeploymentTrue()
+	nc.Status.MarkChannelDeploymentServiceTrue()
+	nc.Status.MarkDispatcherDeploymentTrue()
 }
 
 func WithKafkaChannelDeleted(nc *v1alpha1.KafkaChannel) {
@@ -54,12 +58,15 @@ func WithKafkaChannelAddress(a string) KafkaChannelOption {
 func WithSubscriber(uid types.UID, uri string) KafkaChannelOption {
 	return func(nc *v1alpha1.KafkaChannel) {
 		if nc.Spec.Subscribable == nil {
-			nc.Spec.Subscribable = &v1alpha12.Subscribable{}
+			nc.Spec.Subscribable = &duckv1alpha1.Subscribable{}
 		}
 
-		nc.Spec.Subscribable.Subscribers = append(nc.Spec.Subscribable.Subscribers, v1alpha12.SubscriberSpec{
-			UID:           uid,
-			SubscriberURI: uri,
+		nc.Spec.Subscribable.Subscribers = append(nc.Spec.Subscribable.Subscribers, duckv1alpha1.SubscriberSpec{
+			UID: uid,
+			SubscriberURI: &apis.URL{
+				Scheme: "http",
+				Host:   uri,
+			},
 		})
 	}
 }
@@ -67,10 +74,10 @@ func WithSubscriber(uid types.UID, uri string) KafkaChannelOption {
 func WithSubscriberReady(uid types.UID) KafkaChannelOption {
 	return func(nc *v1alpha1.KafkaChannel) {
 		if nc.Status.SubscribableStatus == nil {
-			nc.Status.SubscribableStatus = &v1alpha12.SubscribableStatus{}
+			nc.Status.SubscribableStatus = &duckv1alpha1.SubscribableStatus{}
 		}
 
-		nc.Status.SubscribableStatus.Subscribers = append(nc.Status.SubscribableStatus.Subscribers, v1alpha12.SubscriberStatus{
+		nc.Status.SubscribableStatus.Subscribers = append(nc.Status.SubscribableStatus.Subscribers, duckv1alpha1.SubscriberStatus{
 			Ready: v1.ConditionTrue,
 			UID:   uid,
 		})

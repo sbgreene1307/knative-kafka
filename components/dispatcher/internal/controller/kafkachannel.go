@@ -5,6 +5,7 @@ import (
 	"fmt"
 	kafkav1alpha1 "github.com/kyma-incubator/knative-kafka/components/controller/pkg/apis/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned"
+	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/clientset/versioned/scheme"
 	"github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/informers/externalversions/knativekafka/v1alpha1"
 	listers "github.com/kyma-incubator/knative-kafka/components/controller/pkg/client/listers/knativekafka/v1alpha1"
 	"github.com/kyma-incubator/knative-kafka/components/dispatcher/internal/dispatcher"
@@ -13,7 +14,6 @@ import (
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 	typedcorev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
@@ -142,8 +142,8 @@ func (r Reconciler) reconcile(ctx context.Context, channel *kafkav1alpha1.KafkaC
 	subscriptions := make([]dispatcher.Subscription, 0)
 	for _, subscriber := range channel.Spec.Subscribable.Subscribers {
 		groupId := fmt.Sprintf("kafka.%s", subscriber.UID)
-		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI, GroupId: groupId})
-		r.Logger.Info("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.String("URI", subscriber.SubscriberURI))
+		subscriptions = append(subscriptions, dispatcher.Subscription{URI: subscriber.SubscriberURI.String(), GroupId: groupId})
+		r.Logger.Debug("Adding Subscriber, Consumer Group", zap.String("groupId", groupId), zap.Any("URI", subscriber.SubscriberURI))
 	}
 
 	failedSubscriptions := r.dispatcher.UpdateSubscriptions(subscriptions)
@@ -169,7 +169,7 @@ func (r *Reconciler) createSubscribableStatus(subscribable *eventingduck.Subscri
 			Ready:              corev1.ConditionTrue,
 		}
 		groupId := fmt.Sprintf("kafka.%s", sub.UID)
-		subscription := dispatcher.Subscription{URI: sub.SubscriberURI, GroupId: groupId}
+		subscription := dispatcher.Subscription{URI: sub.SubscriberURI.String(), GroupId: groupId}
 		if err, ok := failedSubscriptions[subscription]; ok {
 			status.Ready = corev1.ConditionFalse
 			status.Message = err.Error()
