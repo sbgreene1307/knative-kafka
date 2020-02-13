@@ -50,6 +50,12 @@
   name = "k8s.io/client-go"
   version = "kubernetes-1.15.3"
 
+# Align With Knative Eventing 0.10.2
+[[constraint]]
+  name = "knative.dev/eventing"
+  version = "v0.10.2"
+
+# Align With Knative Eventing 0.10.2 (Check the Gopkg.toml of knative.dev/eventing to determine the correct version)
 [[override]]
   name = "knative.dev/pkg"
   branch = "release-0.10"
